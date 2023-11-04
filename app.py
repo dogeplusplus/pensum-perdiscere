@@ -8,12 +8,6 @@ from anki_deck import create_deck
 from database import DatabaseConnector
 from cards import Card, Deck, SIDE, FRONT, BACK, CARD_ID
 
-from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
-
-anthropic = Anthropic(
-    # defaults to os.environ.get("ANTHROPIC_API_KEY")
-    api_key="my api key",
-)
 connector = DatabaseConnector("sqlite:///anki.db")
 
 FRONT = "front"
@@ -189,7 +183,7 @@ def review():
         ).style(add="height: 100px;")
         ui.button("Send", icon="file")
 
-    with ui.row().style(add="align-self: center;"):
+    with ui.row():
         ui.button("AGAIN", color="red")
         ui.button("HARD", color="orange")
         ui.button("GOOD", color="green")

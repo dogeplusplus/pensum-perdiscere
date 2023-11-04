@@ -1,5 +1,4 @@
 import os
-from cards import Card
 
 from langchain.chat_models import ChatAnthropic
 from langchain.prompts import PromptTemplate
