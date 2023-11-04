@@ -1,21 +1,41 @@
 from nicegui import events
 from nicegui import ui
 
+from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
+
+anthropic = Anthropic(
+    # defaults to os.environ.get("ANTHROPIC_API_KEY")
+    api_key="my api key",
+)
+
+FRONT = "front"
+BACK = "back"
+CARD_ID = "card_id"
+g_current_card = {CARD_ID: "card1", FRONT: FRONT}
+
+# completion = anthropic.completions.create(
+#     model="claude-2",
+#     max_tokens_to_sample=300,
+#     prompt=f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}",
+# )
+# print(completion.completion)
+
+
 
 front = "frontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfront"
-back = "back"
+back = BACK
 
 card_text = f"## Front: \n\n {front}"
 show_front = True
 
 cards = {
     "card1": {
-        "front": "Front of card 1",
-        "back": "Back of card 1",
+        FRONT: "Front of card 1",
+        BACK: "Back of card 1",
     },
     "card2": {
-        "front": "Front of card 2",
-        "back": "Back of card 2",
+        FRONT: "Front of card 2",
+        BACK: "Back of card 2",
     },
 }
 
@@ -33,24 +53,35 @@ cards = {
 
 decks = {"deck1": cards}
 
+def flip(front):
+    if front == FRONT: 
+        return BACK 
+    else: 
+        return FRONT
 
 @ui.page("/deck/{deck_id}")
 def deck(deck_id: str):
     return decks[deck_id]
 
+@ui.refreshable
+def card_ui():
+    card_id = g_current_card[CARD_ID]
+    card_front = g_current_card[FRONT]
+    ui.label(f"{card_id, card_front}:")
+    ui.label(cards[card_id][card_front])
 
+def flip_card():
+    g_current_card["front"] = flip(g_current_card["front"])
+    card_ui.refresh()
 
+    
+    
+    
 @ui.page("/card/{card_id}/{front}")
 def show_card(card_id, front):
-    global button
     
-    with ui.card().style(add="width: 50%;"):
-        markdown = ui.markdown(card_text)
-
-        if front == "front":
-            markdown.set_content(f"## Front: \n\n {cards[card_id]['front']}")
-        else:
-            markdown.set_content(f"## Back: \n\n {cards[card_id]['back']}")
+    card_ui()
+    ui.button("Flip", on_click=flip_card)
 
 
 @ui.page("/answer")
@@ -95,7 +126,7 @@ def review():
     # with card:
     #     ui.markdown(card_text)
     
-    show_card("card1", "front")
+    show_card("card1", FRONT)
 
     with ui.row():
         ui.textarea("Answer:", placeholder="Type your answer here").style(
