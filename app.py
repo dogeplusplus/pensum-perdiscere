@@ -13,46 +13,24 @@ connector = DatabaseConnector("sqlite:///anki.db")
 FRONT = "front"
 BACK = "back"
 CARD_ID = "card_id"
+CARD = "card"
+CARDS = "cards"
+DECK = "deck"
 
+decks = connector.get_decks()
 
-test_cards = Deck(
-    "deck1",
-    {
-        "card1": Card("card1", "Front of card 1", "Back of card 1"),
-        "card2": Card("card2", "Front of card 2?", "Back of card 2!!!!!"),
-        "card3": Card("card3", "Front of card 3", "Back of card 3")
-    }
-)
+init_deck = decks[0]
+init_cards = connector.get_cards(init_deck)
 
-# STATE VARIABLES
-CURRENT_CARD_STATE = {CARD_ID: "card1", SIDE: FRONT}
-CURRENT_DECK_ID = "deck1"
-DECKS = {"deck1": test_cards}
+STATE = {
+    DECK: init_deck,
+    CARDS: init_cards,
+    CARD: random.choice(init_cards),
+    SIDE: FRONT,
+}
 
 def current_deck() -> Deck: 
-    return DECKS[CURRENT_DECK_ID]
-
-# completion = anthropic.completions.create(
-#     model="claude-2",
-#     max_tokens_to_sample=300,
-#     prompt=f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}",
-# )
-# print(completion.completion)
-
-
-
-
-
-# cards = {
-#     "card1": {
-#         FRONT: "Front of card 1",
-#         BACK: "Back of card 1",
-#     },
-#     "card2": {
-#         FRONT: "Front of card 2",
-#         BACK: "Back of card 2",
-#     },
-# }
+    return connector.get_deck(CURRENT_DECK_ID)
 
 @ui.refreshable
 @ui.page("/decks")
@@ -70,13 +48,10 @@ def load_deck(deck_name):
     cards = connector.get_cards(deck_name)
     
     with ui.column():
-        for card in cards:
+        for i, card in enumerate(cards):
             with ui.card():
-                ui.label(card.front)
-                ui.label(card.back)
-                ui.button("Delete", on_click=lambda: delete_card(card.card_id))
-                
-    ui.button("Delete Deck", on_click=lambda: delete_deck(deck_name))
+                ui.label(cards[i].front)
+                ui.label(cards[i].back)
     
 
 
@@ -100,28 +75,27 @@ def flip(side):
     else: 
         return FRONT
 
-# @ui.page("/deck/{deck_id}")
-# def deck(deck_id: str):
-#     return ui.label(str(g_decks[deck_id]))
-
 @ui.refreshable
 def card_ui():
-    card_id = CURRENT_CARD_STATE[CARD_ID]
-    card_front = CURRENT_CARD_STATE[SIDE]
-    ui.label(f"{card_id, card_front}:")
-    card = current_deck().cards[card_id]
-    ui.label(card.side(card_front))
+    card = STATE[CARD]
+    side = STATE[SIDE]
+    
+    ui.label(f"{card.card_id, side}:")
+    
+    if side == FRONT:
+        ui.label(card.front)
+    else:
+        ui.label(card.back)
 
 
 def flip_card():
-    CURRENT_CARD_STATE[SIDE] = flip(CURRENT_CARD_STATE[SIDE])
+    STATE[SIDE] = flip(STATE[SIDE])
     card_ui.refresh()
     
-def random_card(default_side = FRONT, random_side = False):
-    new_card = current_deck().random_card()
-    print(new_card)
-    CURRENT_CARD_STATE[CARD_ID] = new_card.card_id
-    CURRENT_CARD_STATE[SIDE] = random.sample([FRONT, BACK], 1)[0] if random_side else default_side
+def random_card():
+    new_card = random.choice(STATE[CARDS])
+    STATE[CARD] = new_card
+    STATE[SIDE] = FRONT
     card_ui.refresh()
 
 
@@ -131,10 +105,6 @@ def show_card(card_id, front):
     card_ui()
     ui.button("Flip", on_click=flip_card)
     ui.button("Random Card", on_click=random_card)
-
-@ui.page("/answer")
-def evaluate_answer():
-    pass
 
 def handle_upload(e: events.UploadEventArguments):
     text = e.content.read().decode("utf-8")
@@ -167,13 +137,26 @@ def create_deck_and_add_to_db(topic, num_cards):
         connector.create_card(deck.name, card.front, card.back)
     
     ui.label("Deck Created")       
-    # ui.notify(f"Deck Created: {topic}, {deck.cards}", type="success")
-    # ui.open(f"/deck/{deck.name}")
+    load_deck.refresh()
+    view_decks.refresh()
+    
+
+@ui.refreshable
+def update_deck(deck_name):
+    STATE[DECK] = deck_name
+    STATE[CARDS] = connector.get_cards(deck_name)
+    STATE[CARD] = random.choice(STATE[CARDS])
+    STATE[SIDE] = FRONT
+
+    card_ui.refresh()
 
 
 @ui.page("/review")
 def review():
     default_style = "width: 100%; margin: 10px; word-break: break-word;"
+    
+    with ui.row():
+        ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value))
     
     show_card("card1", FRONT)
 
