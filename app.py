@@ -1,5 +1,8 @@
 from nicegui import events
 from nicegui import ui
+import random
+
+from cards import Card, Deck, SIDE, FRONT, BACK, CARD_ID
 
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
 
@@ -11,7 +14,24 @@ anthropic = Anthropic(
 FRONT = "front"
 BACK = "back"
 CARD_ID = "card_id"
-g_current_card = {CARD_ID: "card1", FRONT: FRONT}
+
+
+test_cards = Deck(
+    "deck1",
+    {
+        "card1": Card("card1", "Front of card 1", "Back of card 1"),
+        "card2": Card("card2", "Front of card 2?", "Back of card 2!!!!!"),
+        "card3": Card("card3", "Front of card 3", "Back of card 3")
+    }
+)
+
+# STATE VARIABLES
+CURRENT_CARD_STATE = {CARD_ID: "card1", SIDE: FRONT}
+CURRENT_DECK_ID = "deck1"
+DECKS = {"deck1": test_cards}
+
+def current_deck() -> Deck: 
+    return DECKS[CURRENT_DECK_ID]
 
 # completion = anthropic.completions.create(
 #     model="claude-2",
@@ -22,67 +42,58 @@ g_current_card = {CARD_ID: "card1", FRONT: FRONT}
 
 
 
-front = "frontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfront"
-back = BACK
-
-card_text = f"## Front: \n\n {front}"
-show_front = True
-
-cards = {
-    "card1": {
-        FRONT: "Front of card 1",
-        BACK: "Back of card 1",
-    },
-    "card2": {
-        FRONT: "Front of card 2",
-        BACK: "Back of card 2",
-    },
-}
 
 
-# @attrs.define
-# class Card:
-#     card_id: str
-#     front: str
-#     back: str
-#     tags: set = attrs.field(factory=list)
+# cards = {
+#     "card1": {
+#         FRONT: "Front of card 1",
+#         BACK: "Back of card 1",
+#     },
+#     "card2": {
+#         FRONT: "Front of card 2",
+#         BACK: "Back of card 2",
+#     },
+# }
+    
 
+# decks = {"deck1": cards}
 
-# card1 = Card("card1", "front of card 1", "back of card 1")
-# card2 = Card("card1", "front of card 2", "back of card 2")
-
-decks = {"deck1": cards}
-
-def flip(front):
-    if front == FRONT: 
+def flip(side):
+    if side == FRONT: 
         return BACK 
     else: 
         return FRONT
 
-@ui.page("/deck/{deck_id}")
-def deck(deck_id: str):
-    return decks[deck_id]
+# @ui.page("/deck/{deck_id}")
+# def deck(deck_id: str):
+#     return ui.label(str(g_decks[deck_id]))
 
 @ui.refreshable
 def card_ui():
-    card_id = g_current_card[CARD_ID]
-    card_front = g_current_card[FRONT]
+    card_id = CURRENT_CARD_STATE[CARD_ID]
+    card_front = CURRENT_CARD_STATE[SIDE]
     ui.label(f"{card_id, card_front}:")
-    ui.label(cards[card_id][card_front])
+    card = current_deck().cards[card_id]
+    ui.label(card.side(card_front))
 
 def flip_card():
-    g_current_card["front"] = flip(g_current_card["front"])
+    CURRENT_CARD_STATE[SIDE] = flip(CURRENT_CARD_STATE[SIDE])
+    card_ui.refresh()
+    
+def random_card(default_side = FRONT, random_side = False):
+    new_card = current_deck().random_card()
+    print(new_card)
+    CURRENT_CARD_STATE[CARD_ID] = new_card.card_id
+    CURRENT_CARD_STATE[SIDE] = random.sample([FRONT, BACK], 1)[0] if random_side else default_side
     card_ui.refresh()
 
-    
-    
     
 @ui.page("/card/{card_id}/{front}")
 def show_card(card_id, front):
     
     card_ui()
     ui.button("Flip", on_click=flip_card)
-
+    ui.button("Random Card", on_click=random_card)
 
 @ui.page("/answer")
 def evaluate_answer():
@@ -140,6 +151,8 @@ def review():
         ui.button("GOOD", color="green")
         ui.button("EASY", color="blue")
 
+
+# Main page
 
 with ui.column().style("width: 100%; height: 100%;"):
     with ui.tabs() as tabs:
