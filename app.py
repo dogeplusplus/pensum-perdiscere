@@ -73,7 +73,6 @@ def view_decks():
 @ui.refreshable
 @ui.page("/deck/{deck_name}")
 def load_deck(deck_name):
-    connector = DatabaseConnector("sqlite:///anki.db")
     cards = connector.get_cards(deck_name)
     
     with ui.column():
@@ -219,4 +218,9 @@ with ui.column().style("width: 100%; height: 100%;"):
         with ui.tab_panel("Decks"):
             view_decks()
 
+dark = ui.dark_mode()
+dark.enable()
+ui.label('Switch mode:')
+ui.button('Dark', on_click=dark.enable)
+ui.button('Light', on_click=dark.disable)
 ui.run()
