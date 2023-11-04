@@ -1,2 +1,6 @@
 nicegui
 anthropic
+langchain
+python-dotenv
+attrs
+pydantic

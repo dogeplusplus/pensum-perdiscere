@@ -76,6 +76,7 @@ def card_ui():
     card = current_deck().cards[card_id]
     ui.label(card.side(card_front))
 
+
 def flip_card():
     CURRENT_CARD_STATE[SIDE] = flip(CURRENT_CARD_STATE[SIDE])
     card_ui.refresh()
@@ -87,7 +88,7 @@ def random_card(default_side = FRONT, random_side = False):
     CURRENT_CARD_STATE[SIDE] = random.sample([FRONT, BACK], 1)[0] if random_side else default_side
     card_ui.refresh()
 
-    
+
 @ui.page("/card/{card_id}/{front}")
 def show_card(card_id, front):
     
@@ -133,9 +134,6 @@ def deck():
 @ui.page("/review")
 def review():
     default_style = "width: 100%; margin: 10px; word-break: break-word;"
-    # card = ui.card().style(default_style).on("mousedown", show_card)
-    # with card:
-    #     ui.markdown(card_text)
     
     show_card("card1", FRONT)
 
