@@ -1,15 +1,16 @@
-
+from argparse import Namespace
 from nicegui import events
 from nicegui import ui
 import random
 
 
-from anki_deck import create_deck
+from anki_deck import create_deck, answer_eval
 from database import DatabaseConnector
 from cards import Card, Deck, SIDE, FRONT, BACK, CARD_ID
 
 connector = DatabaseConnector("sqlite:///anki.db")
 
+ANSWER= "answer"
 FRONT = "front"
 BACK = "back"
 CARD_ID = "card_id"
@@ -27,6 +28,7 @@ STATE = {
     CARDS: init_cards,
     CARD: random.choice(init_cards),
     SIDE: FRONT,
+    ANSWER: Namespace(score="", explanation=""),
 }
 
 def current_deck() -> Deck: 
@@ -80,12 +82,13 @@ def card_ui():
     card = STATE[CARD]
     side = STATE[SIDE]
     
-    ui.label(f"{card.card_id, side}:")
-    
-    if side == FRONT:
-        ui.label(card.front)
-    else:
-        ui.label(card.back)
+    with ui.card():
+        if side == FRONT:
+            ui.markdown("FRONT").style("margin-right: 0; text-align: right; font-weight: bold;")
+            ui.label(card.front)
+        else:
+            ui.label("BACK").style("margin-right: 0; text-align: right; font-weight: bold;")
+            ui.label(card.back)
 
 
 def flip_card():
@@ -96,15 +99,17 @@ def random_card():
     new_card = random.choice(STATE[CARDS])
     STATE[CARD] = new_card
     STATE[SIDE] = FRONT
+    STATE[ANSWER] = Namespace(score="", explanation="")
     card_ui.refresh()
 
 
-@ui.page("/card/{card_id}/{front}")
-def show_card(card_id, front):
+@ui.page("/card")
+def show_card():
     
     card_ui()
-    ui.button("Flip", on_click=flip_card)
-    ui.button("Random Card", on_click=random_card)
+    with ui.row():
+        ui.button("Flip", on_click=flip_card)
+        ui.button("Random Card", on_click=random_card)
 
 def handle_upload(e: events.UploadEventArguments):
     text = e.content.read().decode("utf-8")
@@ -147,31 +152,55 @@ def update_deck(deck_name):
     STATE[CARDS] = connector.get_cards(deck_name)
     STATE[CARD] = random.choice(STATE[CARDS])
     STATE[SIDE] = FRONT
+    STATE[ANSWER] = Namespace(score="", explanation="")
 
     card_ui.refresh()
+        
+    
 
-
+@ui.refreshable
 @ui.page("/review")
 def review():
     default_style = "width: 100%; margin: 10px; word-break: break-word;"
     
     with ui.row():
-        ui.label("Selected Deck")
         ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value), value=STATE[DECK])
     
-    show_card("card1", FRONT)
+    ui.markdown("#### Card")
+    show_card()
 
     with ui.row():
-        ui.textarea("Answer:", placeholder="Type your answer here").style(
+        answer = ui.textarea("Answer:", placeholder="Type your answer here").style(
             default_style
-        ).style(add="height: 100px;")
-        ui.button("Send", icon="file")
-
+        ).style(add="height: 80%;")
+        
     with ui.row():
-        ui.button("AGAIN", color="red")
-        ui.button("HARD", color="orange")
-        ui.button("GOOD", color="green")
-        ui.button("EASY", color="blue")
+        ui.button("Send", icon="question", on_click=lambda: answer_eval_page(answer.value))
+
+    
+    color_score_map = {
+        1: "red",
+        2: "orange",
+        3: "green",
+        4: "blue",
+    }
+    if STATE[ANSWER].score != "":
+        score_color = color_score_map[STATE[ANSWER].score]
+        with ui.card().style(f"background-color: {score_color}; color: white;"):
+            ui.label(f"Score: {STATE[ANSWER].score}")
+            ui.label(f"Explanation: {STATE[ANSWER].explanation}")
+    
+@ui.refreshable
+@ui.page("/answer_eval")
+def answer_eval_page(answer):
+    card_front = STATE[CARD].back
+    card_back = STATE[CARD].front
+
+    evaluation = answer_eval(card_front, card_back, answer)
+    STATE[ANSWER] = evaluation
+
+        
+    review.refresh()
 
 
 # Main page
@@ -199,6 +228,7 @@ with ui.column().style("width: 100%; height: 100%;"):
 dark = ui.dark_mode()
 dark.enable()
 ui.label('Switch mode:')
-ui.button('Dark', on_click=dark.enable)
-ui.button('Light', on_click=dark.disable)
+with ui.row():
+    ui.button('Dark', on_click=dark.enable)
+    ui.button('Light', on_click=dark.disable)
 ui.run()
