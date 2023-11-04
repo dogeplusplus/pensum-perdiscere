@@ -156,7 +156,8 @@ def review():
     default_style = "width: 100%; margin: 10px; word-break: break-word;"
     
     with ui.row():
-        ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value))
+        ui.label("Selected Deck")
+        ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value), value=STATE[DECK])
     
     show_card("card1", FRONT)
 
@@ -177,10 +178,10 @@ def review():
 
 with ui.column().style("width: 100%; height: 100%;"):
     with ui.tabs() as tabs:
-        ui.tab("Fact Check", icon="info")
-        ui.tab("Create Deck", icon="")
-        ui.tab("Review", icon="user")
-        ui.tab("Decks")
+        ui.tab("Review", icon="plagiarism")
+        ui.tab("Create Deck", icon="add_circle")
+        ui.tab("Decks", icon="view_list")
+        ui.tab("Fact Check", icon="fact_check")
 
     with ui.tab_panels(tabs).classes("w-full") as panels:
         with ui.tab_panel("Create Deck"):
