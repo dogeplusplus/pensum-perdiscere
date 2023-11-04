@@ -2,7 +2,6 @@ from nicegui import events
 from nicegui import ui
 
 
-
 front = "frontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfront"
 back = "back"
 
@@ -21,10 +20,23 @@ cards = {
 }
 
 
+# @attrs.define
+# class Card:
+#     card_id: str
+#     front: str
+#     back: str
+#     tags: set = attrs.field(factory=list)
+
+
+# card1 = Card("card1", "front of card 1", "back of card 1")
+# card2 = Card("card1", "front of card 2", "back of card 2")
+
+decks = {"deck1": cards}
+
+
 @ui.page("/deck/{deck_id}")
 def deck(deck_id: str):
-    return cards
-
+    return decks[deck_id]
 
 
 
@@ -34,15 +46,17 @@ def show_card(card_id, front):
     
     with ui.card().style(add="width: 50%;"):
         markdown = ui.markdown(card_text)
-        
+
         if front == "front":
             markdown.set_content(f"## Front: \n\n {cards[card_id]['front']}")
         else:
             markdown.set_content(f"## Back: \n\n {cards[card_id]['back']}")
 
+
 @ui.page("/answer")
 def evaluate_answer():
     pass
+
 
 @ui.page("/update/card")
 def update_card():
@@ -67,8 +81,11 @@ def deck():
     ui.markdown("# Create Deck")
     ui.input("Topic of Interest", placeholder="Type something you want to learn here")
     ui.input("Deck Name", placeholder="Type something you want to learn here")
+    ui.input(
+        "Additional Information",
+        placeholder="Add things here like: your goals, things you already know",
+    )
     ui.button("Create Deck")
-
 
 
 @ui.page("/review")
@@ -81,16 +98,16 @@ def review():
     show_card("card1", "front")
 
     with ui.row():
-        ui.textarea("Answer:", placeholder="Type your answer here").style(default_style).style(add="height: 100px;")
+        ui.textarea("Answer:", placeholder="Type your answer here").style(
+            default_style
+        ).style(add="height: 100px;")
         ui.button("Send", icon="file")
-
 
     with ui.row().style(add="align-self: center;"):
         ui.button("AGAIN", color="red")
         ui.button("HARD", color="orange")
         ui.button("GOOD", color="green")
         ui.button("EASY", color="blue")
-
 
 
 with ui.column().style("width: 100%; height: 100%;"):
