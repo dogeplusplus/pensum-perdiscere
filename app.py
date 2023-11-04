@@ -82,7 +82,10 @@ def load_deck(deck_name):
                 ui.label(card.front)
                 ui.label(card.back)
                 ui.button("Delete", on_click=lambda: delete_card(card.card_id))
+                
+    ui.button("Delete Deck", on_click=lambda: delete_deck(deck_name))
     
+
 
 @ui.refreshable
 def edit_card(card_id, front, back):
@@ -91,6 +94,10 @@ def edit_card(card_id, front, back):
 @ui.refreshable
 def delete_card(card_id):
     connector.delete_card(card_id)
+    load_deck.refresh()
+    
+def delete_deck(deck_name):
+    connector.delete_deck(deck_name)
     load_deck.refresh()
     
 
