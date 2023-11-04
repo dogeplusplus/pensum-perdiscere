@@ -42,6 +42,9 @@ class Topic(BaseModel):
     topic: str
     subtopics: List[str]
 
+class Answer(BaseModel):
+    score: int
+    explanation: str
 
 def create_subtopics(topic, num):
     parser = PydanticOutputParser(pydantic_object=Topic)
@@ -78,20 +81,21 @@ def fact_check(topic, card_front: str, card_back: str, evidence: str):
     result = parser.parse(output)
     return result
 
-def answer_eval(topic, card_front: str, card_back: str, answer: str):
-    parser = PydanticOutputParser(pydantic_object=Topic)
+def answer_eval(card_front: str, card_back: str, answer: str):
+    parser = PydanticOutputParser(pydantic_object=Answer)
     prompt = PromptTemplate(
         template="Here is the front of the current anki card: <FRONT>{card_front}</FRONT>\n \
                 and here is the back of the current anki card: <BACK>{card_back}</BACK>.\n \
                 The back is supposed to be the answer to the front of the card.\
                 Here is some answer that a learner wrote: <ANSWER>{answer}</ANSWER>\
                 How do you think the student did?  Explain your reasoning.\n \
-                If you have suggestions for improvement, suggest what they should be. Then rate their answer on a scale of 1 to 4, 1 being the worst.\n{format_instructions}\n{topic}",
+                If you have suggestions for improvement, suggest what they should be.\
+                    Rate their answer on a scale of 1 to 4, 1 being the worst.\n{format_instructions}\n",
         input_variables=["card_front", "card_back", "answer"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
     _input = prompt.format_prompt(
-        topic=topic, card_front=card_front, card_back=card_back, evidence=evidence
+        card_front=card_front, card_back=card_back, answer=answer
     )
 
     output = chat.predict(_input.text)
@@ -116,13 +120,22 @@ def main():
     # print(deck)
 
     # test fact check
-    evidence = "Brian is a 70 year-old alcoholic and needs a new kidney"
-    card_front = "Is Brian OK?"
-    card_back = (
-        "Yeah Brian is OK I saw him yesterday and all his organs seem to be working"
-    )
-
-    print(fact_check("Health", card_front, card_back, evidence))
+    # evidence = "Brian is a 70 year-old alcoholic and needs a new kidney"
+    # card_front = "Is Brian OK?"
+    # card_back = (
+    #     "Yeah Brian is OK I saw him yesterday and all his organs seem to be working"
+    # )
+    # print(fact_check("Health", card_front, card_back, evidence))
+    
+    # test answer_eval
+    card_front = "What is a partial differential equation?"
+    card_back = '''A partial differential equation is a type of mathematical equation that involves the partial derivatives\
+        of a function with respect to one or more independent variables. Partial derivatives are the rates of change of a \
+            function along a specific direction, such as x or y. Partial differential equations are used to model many natural\
+                phenomena, such as heat, sound, waves, fluid flow, and electromagnetism.'''
+    answer = "Its some sort of math thing, people use it for physical modelling and statistics. It is a type of inequality"
+    print(answer_eval(card_front, card_back, answer))
+    
 
 
 if __name__ == "__main__":
