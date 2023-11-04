@@ -1,7 +1,11 @@
+import os
 from nicegui import events
 from nicegui import ui
 import random
 
+
+from anki_deck import create_deck
+from database import DatabaseConnector
 from cards import Card, Deck, SIDE, FRONT, BACK, CARD_ID
 
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
@@ -10,6 +14,7 @@ anthropic = Anthropic(
     # defaults to os.environ.get("ANTHROPIC_API_KEY")
     api_key="my api key",
 )
+connector = DatabaseConnector("sqlite:///anki.db")
 
 FRONT = "front"
 BACK = "back"
@@ -54,9 +59,40 @@ def current_deck() -> Deck:
 #         BACK: "Back of card 2",
 #     },
 # }
+
+@ui.refreshable
+@ui.page("/decks")
+def view_decks():
+    decks = connector.get_decks()
+
+    with ui.row():
+        ui.label("Deck")
+        ui.select(options=decks, label="Decks", on_change=lambda e : load_deck(e.value))
+
+
+@ui.refreshable
+@ui.page("/deck/{deck_name}")
+def load_deck(deck_name):
+    connector = DatabaseConnector("sqlite:///anki.db")
+    cards = connector.get_cards(deck_name)
+    
+    with ui.column():
+        for card in cards:
+            with ui.card():
+                ui.label(card.front)
+                ui.label(card.back)
+                ui.button("Delete", on_click=lambda: delete_card(card.card_id))
     
 
-# decks = {"deck1": cards}
+@ui.refreshable
+def edit_card(card_id, front, back):
+    connnector.edit_card(card_id, "new front", "new back")
+    
+@ui.refreshable
+def delete_card(card_id):
+    connector.delete_card(card_id)
+    load_deck.refresh()
+    
 
 def flip(side):
     if side == FRONT: 
@@ -100,15 +136,6 @@ def show_card(card_id, front):
 def evaluate_answer():
     pass
 
-
-@ui.page("/update/card")
-def update_card():
-    ui.markdown("## Update Card")
-    with ui.row():
-        ui.label("Deck:")
-        ui.select(options=["Deck 1", "Deck 2", "Deck 3"], label="Deck")
-
-
 def handle_upload(e: events.UploadEventArguments):
     text = e.content.read().decode("utf-8")
     return text
@@ -119,16 +146,29 @@ def fact_check():
     ui.upload(on_upload=handle_upload, label="Reference Material")
 
 
-@ui.page("/deck")
+@ui.page("/create_deck")
 def deck():
     ui.markdown("# Create Deck")
-    ui.input("Topic of Interest", placeholder="Type something you want to learn here")
-    ui.input("Deck Name", placeholder="Type something you want to learn here")
+    topic = ui.input("Topic of Interest", placeholder="Type something you want to learn here")
+    num_cards = ui.input("Number of Cards", placeholder="Type a number here")
+    
     ui.input(
         "Additional Information",
         placeholder="Add things here like: your goals, things you already know",
     )
-    ui.button("Create Deck")
+
+    ui.button("Create Deck", on_click=lambda: create_deck_and_add_to_db(topic.value, num_cards.value))
+    
+@ui.page("/create_deck/{topic}/{num_cards}")
+def create_deck_and_add_to_db(topic, num_cards):
+    deck = create_deck(topic, num_cards)
+    connector.create_deck(deck.name)
+    for card in deck.cards:
+        connector.create_card(deck.name, card.front, card.back)
+    
+    ui.label("Deck Created")       
+    # ui.notify(f"Deck Created: {topic}, {deck.cards}", type="success")
+    # ui.open(f"/deck/{deck.name}")
 
 
 @ui.page("/review")
@@ -154,10 +194,10 @@ def review():
 
 with ui.column().style("width: 100%; height: 100%;"):
     with ui.tabs() as tabs:
-        ui.tab("Update Card", icon="home")
         ui.tab("Fact Check", icon="info")
         ui.tab("Create Deck", icon="")
         ui.tab("Review", icon="user")
+        ui.tab("Decks")
 
     with ui.tab_panels(tabs).classes("w-full") as panels:
         with ui.tab_panel("Create Deck"):
@@ -168,5 +208,8 @@ with ui.column().style("width: 100%; height: 100%;"):
 
         with ui.tab_panel("Fact Check"):
             fact_check()
+            
+        with ui.tab_panel("Decks"):
+            view_decks()
 
 ui.run()

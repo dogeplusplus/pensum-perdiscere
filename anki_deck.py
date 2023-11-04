@@ -15,8 +15,8 @@ chat = ChatAnthropic(anthropic_api_key=api_key, model="claude-2")
 
 
 class AnkiCard(BaseModel):
-    Front: str
-    Back: str
+    front: str
+    back: str
 
 
 class Deck(BaseModel):

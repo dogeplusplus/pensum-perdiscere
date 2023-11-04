@@ -96,8 +96,6 @@ if __name__ == "__main__":
     engine = sqlalchemy.create_engine(db_file)
     # Base.metadata.create_all(bind=engine)
     
-    truncate_all_tables(engine)
-    
     db_connector = DatabaseConnector(db_file)
     deck = db_connector.create_deck("deck1")
     card = db_connector.create_card(deck_name="deck1", front="front", back="back")
