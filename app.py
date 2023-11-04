@@ -2,6 +2,7 @@ from nicegui import events
 from nicegui import ui
 
 
+
 front = "frontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfrontfront"
 back = "back"
 
@@ -77,7 +78,7 @@ def review():
     # with card:
     #     ui.markdown(card_text)
     
-    show_card("card1", "front").on("mousedown", show_card("card1", "back"))
+    show_card("card1", "front")
 
     with ui.row():
         ui.textarea("Answer:", placeholder="Type your answer here").style(default_style).style(add="height: 100px;")
