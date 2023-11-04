@@ -206,6 +206,7 @@ def answer_eval_page(answer):
 # Main page
 
 with ui.column().style("width: 100%; height: 100%;"):
+    ui.image("ankiclaude.png").style("width: 3%; height: 3%;")
     with ui.tabs() as tabs:
         ui.tab("Review", icon="plagiarism")
         ui.tab("Create Deck", icon="add_circle")
