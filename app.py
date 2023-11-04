@@ -26,19 +26,18 @@ def deck(deck_id: str):
 
 
 
-@ui.page("/card/{card_id}")
-def show_card(card_id):
-    global button, show_front, card
 
-    with card:
-        with ui.card_section().style(add="width: 50%;"):
-            markdown = ui.markdown(card_text)
+@ui.page("/card/{card_id}/{front}")
+def show_card(card_id, front):
+    global button
+    
+    with ui.card().style(add="width: 50%;"):
+        markdown = ui.markdown(card_text)
         
-    show_front = not show_front
-    if show_front:
-        markdown.set_content(f"## Front: \n\n {cards[card_id]['front']}")
-    else:
-        markdown.set_content(f"## Back: \n\n {cards[card_id]['back']}")
+        if front == "front":
+            markdown.set_content(f"## Front: \n\n {cards[card_id]['front']}")
+        else:
+            markdown.set_content(f"## Back: \n\n {cards[card_id]['back']}")
 
 @ui.page("/answer")
 def evaluate_answer():
@@ -74,8 +73,11 @@ def deck():
 @ui.page("/review")
 def review():
     default_style = "width: 100%; margin: 10px; word-break: break-word;"
-    card = ui.card().style(default_style).on("mousedown", show_card)
-
+    # card = ui.card().style(default_style).on("mousedown", show_card)
+    # with card:
+    #     ui.markdown(card_text)
+    
+    show_card("card1", "front").on("mousedown", show_card("card1", "back"))
 
     with ui.row():
         ui.textarea("Answer:", placeholder="Type your answer here").style(default_style).style(add="height: 100px;")
