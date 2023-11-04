@@ -170,9 +170,9 @@ def review():
     show_card()
 
     with ui.row():
-        answer = ui.textarea("Answer:", placeholder="Type your answer here").style(
+        answer = ui.input("Answer:", placeholder="Type your answer here").style(
             default_style
-        ).style(add="height: 80%;")
+        ).style(add="height: 80%; word-break: break-word; width: 100%;")
         
     with ui.row():
         ui.button("Send", icon="question", on_click=lambda: answer_eval_page(answer.value))
@@ -205,7 +205,7 @@ def answer_eval_page(answer):
 
 # Main page
 
-with ui.column().style("width: 100%; height: 100%;"):
+with ui.row().style("width: 100%; height: 100%;"):
     ui.image("ankiclaude.png").style("width: 3%; height: 3%;")
     with ui.tabs() as tabs:
         ui.tab("Review", icon="plagiarism")

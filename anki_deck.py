@@ -50,7 +50,7 @@ class FactCheck(BaseModel):
     score: int
     verdict: str
     explanation: str
-    possible_changes: list[str]
+    possible_changes: List[str]
 
 def create_subtopics(topic, num):
     parser = PydanticOutputParser(pydantic_object=Topic)
