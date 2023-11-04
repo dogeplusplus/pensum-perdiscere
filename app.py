@@ -50,13 +50,9 @@ def view_decks():
 
     with ui.row():
         ui.label("Deck")
-        ui.select(options=decks, label="Decks", on_change=lambda e : load_deck(e.value), value=decks[1])
+        ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value), value=STATE[DECK])
 
-
-@ui.refreshable
-@ui.page("/deck/{deck_name}")
-async def load_deck(deck_name):
-    cards = connector.get_cards(deck_name)
+    cards = connector.get_cards(STATE[DECK])
     
     with ui.column():
         for i, card in enumerate(cards):
@@ -166,7 +162,7 @@ def update_deck(deck_name):
     STATE[ANSWER] = Namespace(score="", explanation="")
 
     card_ui.refresh()
-    load_deck.refresh()
+    view_decks.refresh()
         
     
 
