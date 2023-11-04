@@ -1,3 +1,6 @@
+import asyncio
+
+from nicegui import run
 from argparse import Namespace
 from nicegui import events
 from nicegui import ui
@@ -6,7 +9,7 @@ import random
 
 from anki_deck import create_deck, answer_eval
 from database import DatabaseConnector
-from cards import Card, Deck, SIDE, FRONT, BACK, CARD_ID
+from cards import Deck, SIDE, FRONT, BACK
 
 connector = DatabaseConnector("sqlite:///anki.db")
 
@@ -19,6 +22,11 @@ CARDS = "cards"
 DECK = "deck"
 
 decks = connector.get_decks()
+if len(decks) == 0:
+    connector.create_deck("default")
+    connector.create_card("default", "front", "back")
+    decks = connector.get_decks()
+
 
 init_deck = decks[0]
 init_cards = connector.get_cards(init_deck)
@@ -32,7 +40,7 @@ STATE = {
 }
 
 def current_deck() -> Deck: 
-    return connector.get_deck(CURRENT_DECK_ID)
+    return connector.get_deck(STATE[DECK])
 
 @ui.refreshable
 @ui.page("/decks")
@@ -46,7 +54,7 @@ def view_decks():
 
 @ui.refreshable
 @ui.page("/deck/{deck_name}")
-def load_deck(deck_name):
+async def load_deck(deck_name):
     cards = connector.get_cards(deck_name)
     
     with ui.column():
@@ -56,10 +64,9 @@ def load_deck(deck_name):
                 ui.label(cards[i].back)
     
 
-
 @ui.refreshable
-def edit_card(card_id, front, back):
-    connnector.edit_card(card_id, "new front", "new back")
+async def edit_card(card_id, front, back):
+    connector.edit_card(card_id, "new front", "new back")
     
 @ui.refreshable
 def delete_card(card_id):
@@ -78,7 +85,7 @@ def flip(side):
         return FRONT
 
 @ui.refreshable
-def card_ui():
+async def card_ui():
     card = STATE[CARD]
     side = STATE[SIDE]
     
@@ -118,12 +125,15 @@ def handle_upload(e: events.UploadEventArguments):
 
 @ui.page("/fact_check")
 def fact_check():
+    ui.markdown("### Fact Check")
+
+    ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value), value=STATE[DECK])
     ui.upload(on_upload=handle_upload, label="Reference Material")
 
 
 @ui.page("/create_deck")
 def deck():
-    ui.markdown("# Create Deck")
+    ui.markdown("### Create Deck")
     topic = ui.input("Topic of Interest", placeholder="Type something you want to learn here")
     num_cards = ui.input("Number of Cards", placeholder="Type a number here")
     
@@ -132,16 +142,17 @@ def deck():
         placeholder="Add things here like: your goals, things you already know",
     )
 
+
     ui.button("Create Deck", on_click=lambda: create_deck_and_add_to_db(topic.value, num_cards.value))
     
 @ui.page("/create_deck/{topic}/{num_cards}")
-def create_deck_and_add_to_db(topic, num_cards):
-    deck = create_deck(topic, num_cards)
+async def create_deck_and_add_to_db(topic, num_cards):
+    deck = await run.io_bound(create_deck, topic=topic, num_cards=num_cards)
     connector.create_deck(deck.name)
     for card in deck.cards:
         connector.create_card(deck.name, card.front, card.back)
     
-    ui.label("Deck Created")       
+    ui.notify("Deck Created")
     load_deck.refresh()
     view_decks.refresh()
     
@@ -162,6 +173,7 @@ def update_deck(deck_name):
 @ui.page("/review")
 def review():
     default_style = "width: 100%; margin: 10px; word-break: break-word;"
+    ui.markdown("### Review")
     
     with ui.row():
         ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value), value=STATE[DECK])
@@ -192,11 +204,11 @@ def review():
     
 @ui.refreshable
 @ui.page("/answer_eval")
-def answer_eval_page(answer):
+async def answer_eval_page(answer):
     card_front = STATE[CARD].back
     card_back = STATE[CARD].front
 
-    evaluation = answer_eval(card_front, card_back, answer)
+    evaluation = await run.io_bound(answer_eval, card_front=card_front, card_back=card_back, answer=answer)
     STATE[ANSWER] = evaluation
 
         
