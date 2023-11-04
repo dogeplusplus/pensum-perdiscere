@@ -47,9 +47,10 @@ def current_deck() -> Deck:
 def view_decks():
     decks = connector.get_decks()
 
+
     with ui.row():
         ui.label("Deck")
-        ui.select(options=decks, label="Decks", on_change=lambda e : load_deck(e.value))
+        ui.select(options=decks, label="Decks", on_change=lambda e : load_deck(e.value), value=decks[1])
 
 
 @ui.refreshable
@@ -85,7 +86,7 @@ def flip(side):
         return FRONT
 
 @ui.refreshable
-async def card_ui():
+def card_ui():
     card = STATE[CARD]
     side = STATE[SIDE]
     
@@ -154,7 +155,6 @@ async def create_deck_and_add_to_db(topic, num_cards):
     
     ui.notify("Deck Created")
     load_deck.refresh()
-    view_decks.refresh()
     
 
 @ui.refreshable
@@ -166,6 +166,7 @@ def update_deck(deck_name):
     STATE[ANSWER] = Namespace(score="", explanation="")
 
     card_ui.refresh()
+    load_deck.refresh()
         
     
 
@@ -205,8 +206,8 @@ def review():
 @ui.refreshable
 @ui.page("/answer_eval")
 async def answer_eval_page(answer):
-    card_front = STATE[CARD].back
-    card_back = STATE[CARD].front
+    card_front = STATE[CARD].front
+    card_back = STATE[CARD].back
 
     evaluation = await run.io_bound(answer_eval, card_front=card_front, card_back=card_back, answer=answer)
     STATE[ANSWER] = evaluation
