@@ -1,4 +1,4 @@
-import os
+
 from nicegui import events
 from nicegui import ui
 import random

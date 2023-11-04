@@ -78,6 +78,26 @@ def fact_check(topic, card_front: str, card_back: str, evidence: str):
     result = parser.parse(output)
     return result
 
+def answer_eval(topic, card_front: str, card_back: str, answer: str):
+    parser = PydanticOutputParser(pydantic_object=Topic)
+    prompt = PromptTemplate(
+        template="Here is the front of the current anki card: <FRONT>{card_front}</FRONT>\n \
+                and here is the back of the current anki card: <BACK>{card_back}</BACK>.\n \
+                The back is supposed to be the answer to the front of the card.\
+                Here is some answer that a learner wrote: <ANSWER>{answer}</ANSWER>\
+                How do you think the student did?  Explain your reasoning.\n \
+                If you have suggestions for improvement, suggest what they should be. Then rate their answer on a scale of 1 to 4, 1 being the worst.\n{format_instructions}\n{topic}",
+        input_variables=["card_front", "card_back", "answer"],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    )
+    _input = prompt.format_prompt(
+        topic=topic, card_front=card_front, card_back=card_back, evidence=evidence
+    )
+
+    output = chat.predict(_input.text)
+    result = parser.parse(output)
+    return result
+
 
 def create_deck(topic, num_cards):
     subtopics = create_subtopics(topic, num_cards)
