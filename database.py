@@ -39,7 +39,7 @@ class Deck(Base):
     deck_id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     cards: Mapped[List["Card"]] = relationship(back_populates="deck", cascade="all, delete-orphan")
-
+    
     def __repr__(self):
         return f"Deck(name={self.name}, cards={self.cards})"
 
@@ -87,7 +87,11 @@ class DatabaseConnector:
         deck = self.session.query(Deck).filter(Deck.deck_id == deck_id).first()
         self.session.delete(deck)
         self.session.commit()
-
+        
+    def get_deck(self, deck_name: str):
+        deck = self.session.query(Deck).filter(Deck.name == deck_name).first()
+        return deck
+        
     def get_cards(self, deck_name: str):
         deck_id = (
             self.session.query(Deck).filter(Deck.name == deck_name).first().deck_id
