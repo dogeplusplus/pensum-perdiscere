@@ -122,7 +122,6 @@ def show_card():
     ui.button("Random Card", on_click=random_card)
 
 async def handle_upload(e: events.UploadEventArguments, card_front: str, card_back: str):
-    import pdb; pdb.set_trace()
     with e.content as f, TemporaryDirectory() as temp_dir:
 
         temp_file = os.path.join(temp_dir, "temp.pdf")
