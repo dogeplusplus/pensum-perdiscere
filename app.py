@@ -225,7 +225,7 @@ def review():
     show_card()
 
     with ui.row():
-        answer = ui.input("Answer:", placeholder="Type your answer here").style(
+        answer = ui.textarea("Answer:", placeholder="Type your answer here").style(
             default_style
         ).style(add="height: 80%; word-break: break-word; width: 100%;")
         

@@ -26,7 +26,7 @@ class Deck(BaseModel):
 def create_card(subtopic):
     parser = PydanticOutputParser(pydantic_object=AnkiCard)
     prompt = PromptTemplate(
-        template="Give me an anki card for the subtopic\n{format_instructions}\n{subtopic}\n",
+        template="Give me an anki card with a few sentences for the subtopic with the question in the front, the answer in the back \n{format_instructions}\n{subtopic}\n",
         input_variables=["subtopic"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
