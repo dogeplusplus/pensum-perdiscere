@@ -1,5 +1,8 @@
+import os
 import asyncio
+import PyPDF2
 
+from tempfile import TemporaryDirectory
 from nicegui import run
 from argparse import Namespace
 from nicegui import events
@@ -7,7 +10,7 @@ from nicegui import ui
 import random
 
 
-from anki_deck import create_deck, answer_eval
+from anki_deck import create_deck, answer_eval, fact_check
 from database import DatabaseConnector
 from cards import Deck, SIDE, FRONT, BACK
 
@@ -90,7 +93,7 @@ def card_ui():
     card = STATE[CARD]
     side = STATE[SIDE]
     
-    with ui.card():
+    with ui.card().on("mousedown", flip_card):
         if side == FRONT:
             ui.markdown("FRONT").style("margin-right: 0; text-align: right; font-weight: bold;")
             ui.label(card.front)
@@ -109,29 +112,54 @@ def random_card():
     STATE[SIDE] = FRONT
     STATE[ANSWER] = Namespace(score="", explanation="")
     card_ui.refresh()
+    review.refresh()
 
 
+@ui.refreshable
 @ui.page("/card")
 def show_card():
-    
     card_ui()
-    with ui.row():
-        ui.button("Flip", on_click=flip_card)
-        ui.button("Random Card", on_click=random_card)
+    ui.button("Random Card", on_click=random_card)
 
-def handle_upload(e: events.UploadEventArguments):
-    text = e.content.read().decode("utf-8")
-    return text
+async def handle_upload(e: events.UploadEventArguments, card_front: str, card_back: str):
+    import pdb; pdb.set_trace()
+    with e.content as f, TemporaryDirectory() as temp_dir:
+
+        temp_file = os.path.join(temp_dir, "temp.pdf")
+        with open(temp_file, "wb") as f2:
+            f2.write(f.read())
+
+        if e.type == "application/pdf":
+            pdf_reader = PyPDF2.PdfReader(temp_file)
+
+
+            reference = ""
+            for page_num in range(len(pdf_reader.pages)):
+                pdf_page = pdf_reader.pages[page_num]
+                reference += pdf_page.extract_text()
+        elif e.type == "text/plain":
+            reference = f.read().decode("utf-8")
+        else:
+            ui.notify("File type not supported", type="error")
+
+
+    check = await run.io_bound(fact_check, card_front=card_front, card_back=card_back, evidence=reference)
+
+    with ui.card():
+        ui.circular_progress(value=check.score, max=100, min=0, size="xl", show_value=True)
+        ui.label(f"Score: {check.score}")
+        ui.label(f"Explanation: {check.explanation}")
+        ui.label(f"Verdict: {check.verdict}")
+        ui.label(f"Possible Changes: {check.possible_changes}")
 
 @ui.refreshable
 @ui.page("/fact_check")
-def fact_check():
+def fact_check_page():
     ui.markdown("### Fact Check")
 
-    deck_select = ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value), value=STATE[DECK])
-
-    ui.upload(on_upload=handle_upload, label="Reference Material")
-
+    card_front = ui.textarea("Card Front", placeholder="Front of the card")
+    card_back = ui.textarea("Card Back", placeholder="Back of the card")
+    ui.upload(on_upload=lambda e: handle_upload(e, card_front.value, card_back.value), label="Reference Material")
 
 
 
@@ -160,7 +188,8 @@ async def create_deck_and_add_to_db(topic, num_cards):
     spinner.set_visibility(False)
     ui.notify("Deck Created")
     view_decks.refresh()
-    fact_check.refresh()
+    fact_check_page.refresh()
+    review.refresh()
     
 
 @ui.refreshable
@@ -174,6 +203,13 @@ def update_deck(deck_name):
     card_ui.refresh()
     view_decks.refresh()
         
+
+@ui.refreshable
+def update_card(card_id):
+    STATE[CARD] = connector.get_card(card_id)
+    STATE[SIDE] = FRONT
+    STATE[ANSWER] = Namespace(score="", explanation="")
+    card_ui.refresh()
     
 
 @ui.refreshable
@@ -236,6 +272,10 @@ async def answer_eval_page(answer):
 
 with ui.row().style("width: 100%; height: 100%;"):
     ui.image("ankiclaude.png").style("width: 3%; height: 3%;")
+    with ui.column().style("padding: 0px; margin: 0px;"):
+        ui.markdown("#### **Pe**nsum**Pe**rdiscere \n\n(Pensum - Task, Perdiscere - To Learn Thoroughly)")
+        
+
     with ui.tabs() as tabs:
         ui.tab("Review", icon="plagiarism")
         ui.tab("Create Deck", icon="add_circle")
@@ -251,7 +291,7 @@ with ui.tab_panels(tabs).style("width: 50%;") as panels:
         review()
 
     with ui.tab_panel("Fact Check"):
-        fact_check()
+        fact_check_page()
         
     with ui.tab_panel("Decks"):
         view_decks()
@@ -266,4 +306,4 @@ spinner.set_visibility(False)
 with ui.row():
     ui.button('Dark', on_click=dark.enable)
     ui.button('Light', on_click=dark.disable)
-ui.run()
+ui.run(title="PensumPerdiscere")

@@ -95,10 +95,10 @@ def answer_eval(card_front: str, card_back: str, answer: str):
         template="Here is the front of the current anki card: <FRONT>{card_front}</FRONT>\n \
                 and here is the back of the current anki card: <BACK>{card_back}</BACK>.\n \
                 The back is supposed to be the answer to the front of the card.\
-                Here is some answer that a learner wrote: <ANSWER>{answer}</ANSWER>\
-                How do you think the student did?  Explain your reasoning.\n \
+                Here is some answer that a I wrote: <ANSWER>{answer}</ANSWER>\
+                How do you think the I did?  Explain your reasoning.\n \
                 If you have suggestions for improvement, suggest what they should be.\
-                    Rate their answer on a scale of 1 to 10, 1 being the worst.\n{format_instructions}\n",
+                    Rate my answer on a scale of 1 to 10, 1 being the worst.\n{format_instructions}\n",
         input_variables=["card_front", "card_back", "answer"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
