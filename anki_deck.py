@@ -98,7 +98,7 @@ def answer_eval(card_front: str, card_back: str, answer: str):
                 Here is some answer that a learner wrote: <ANSWER>{answer}</ANSWER>\
                 How do you think the student did?  Explain your reasoning.\n \
                 If you have suggestions for improvement, suggest what they should be.\
-                    Rate their answer on a scale of 1 to 4, 1 being the worst.\n{format_instructions}\n",
+                    Rate their answer on a scale of 1 to 10, 1 being the worst.\n{format_instructions}\n",
         input_variables=["card_front", "card_back", "answer"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )

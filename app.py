@@ -54,11 +54,15 @@ def view_decks():
 
     cards = connector.get_cards(STATE[DECK])
     
-    with ui.column():
+    with ui.column().style("width: 50%;"):
         for i, card in enumerate(cards):
             with ui.card():
+                ui.markdown("**Front**")
                 ui.label(cards[i].front)
+                ui.separator()
+                ui.markdown("**Back**")
                 ui.label(cards[i].back)
+
     
 
 @ui.refreshable
@@ -68,11 +72,11 @@ async def edit_card(card_id, front, back):
 @ui.refreshable
 def delete_card(card_id):
     connector.delete_card(card_id)
-    load_deck.refresh()
     
+
 def delete_deck(deck_name):
     connector.delete_deck(deck_name)
-    load_deck.refresh()
+    view_decks.refresh()
     
 
 def flip(side):
@@ -119,13 +123,16 @@ def handle_upload(e: events.UploadEventArguments):
     text = e.content.read().decode("utf-8")
     return text
 
-
+@ui.refreshable
 @ui.page("/fact_check")
 def fact_check():
     ui.markdown("### Fact Check")
 
-    ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value), value=STATE[DECK])
+    deck_select = ui.select(options=decks, label="Decks", on_change=lambda e : update_deck(e.value), value=STATE[DECK])
+
     ui.upload(on_upload=handle_upload, label="Reference Material")
+
+
 
 
 @ui.page("/create_deck")
@@ -144,13 +151,16 @@ def deck():
     
 @ui.page("/create_deck/{topic}/{num_cards}")
 async def create_deck_and_add_to_db(topic, num_cards):
+    spinner.set_visibility(True)
     deck = await run.io_bound(create_deck, topic=topic, num_cards=num_cards)
     connector.create_deck(deck.name)
     for card in deck.cards:
         connector.create_card(deck.name, card.front, card.back)
     
+    spinner.set_visibility(False)
     ui.notify("Deck Created")
-    load_deck.refresh()
+    view_decks.refresh()
+    fact_check.refresh()
     
 
 @ui.refreshable
@@ -186,29 +196,39 @@ def review():
     with ui.row():
         ui.button("Send", icon="question", on_click=lambda: answer_eval_page(answer.value))
 
-    
     color_score_map = {
-        1: "red",
-        2: "orange",
-        3: "green",
-        4: "blue",
+        1: "#FF0000",  # Red
+        2: "#FF3300",
+        3: "#FF6600",
+        4: "#FF9900",
+        5: "#FFCC00",
+        6: "#FFFF00",
+        7: "#CCFF00",
+        8: "#99FF00",
+        9: "#66FF00",
+        10: "#00FF00"  # Green
     }
+
+    # color map dictionary from 1 to 10, 1 being red and 10 being green
+    
     if STATE[ANSWER].score != "":
         score_color = color_score_map[STATE[ANSWER].score]
-        with ui.card().style(f"background-color: {score_color}; color: white;"):
+        with ui.card():
+            ui.circular_progress(value=STATE[ANSWER].score, max=10, min=1, size="xl", show_value=True, color=score_color)
             ui.label(f"Score: {STATE[ANSWER].score}")
             ui.label(f"Explanation: {STATE[ANSWER].explanation}")
     
 @ui.refreshable
 @ui.page("/answer_eval")
 async def answer_eval_page(answer):
+    spinner.set_visibility(True)
     card_front = STATE[CARD].front
     card_back = STATE[CARD].back
 
     evaluation = await run.io_bound(answer_eval, card_front=card_front, card_back=card_back, answer=answer)
     STATE[ANSWER] = evaluation
 
-        
+    spinner.set_visibility(False)
     review.refresh()
 
 
@@ -222,22 +242,27 @@ with ui.row().style("width: 100%; height: 100%;"):
         ui.tab("Decks", icon="view_list")
         ui.tab("Fact Check", icon="fact_check")
 
-    with ui.tab_panels(tabs).classes("w-full") as panels:
-        with ui.tab_panel("Create Deck"):
-            deck()
 
-        with ui.tab_panel("Review"):
-            review()
+with ui.tab_panels(tabs).style("width: 50%;") as panels:
+    with ui.tab_panel("Create Deck"):
+        deck()
 
-        with ui.tab_panel("Fact Check"):
-            fact_check()
-            
-        with ui.tab_panel("Decks"):
-            view_decks()
+    with ui.tab_panel("Review"):
+        review()
+
+    with ui.tab_panel("Fact Check"):
+        fact_check()
+        
+    with ui.tab_panel("Decks"):
+        view_decks()
+
 
 dark = ui.dark_mode()
 dark.enable()
-ui.label('Switch mode:')
+
+spinner = ui.spinner(size="xl")
+spinner.set_visibility(False)
+
 with ui.row():
     ui.button('Dark', on_click=dark.enable)
     ui.button('Light', on_click=dark.disable)
