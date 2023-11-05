@@ -75,8 +75,8 @@ def fact_check(card_front: str, card_back: str, evidence: str):
                 The back is supposed to be the answer to the front of the card.\
                 Here is some expert evidence that you should use to evaluate if the card is correct: <EVIDENCE>{evidence}</EVIDENCE>\
                 Does the evidence show that the card is correct? Explain your reasoning by making references to the evidence.\n \
-                If there needs to be any corrections, make a list of potential changes to make. \
-                Give a one sentence verdict on if the card needs to be changed, and give a score out of 100 of how well the card is made.\
+                If there needs to be any corrections, make a list of possible_changes. Don't add punctuation to strings in the json \
+                Give a one sentence verdict on if the card needs to be changed, and give a score out of 100 of how well the card is made. \
                 \n{format_instructions}\n",
         input_variables=["card_front", "card_back", "evidence"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
