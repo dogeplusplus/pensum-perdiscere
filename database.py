@@ -1,24 +1,23 @@
 import os
 import sqlalchemy
 
-from sqlalchemy import MetaData
+from dataclasses import dataclass
+
 from typing import List
 from sqlalchemy import String
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import (
     sessionmaker,
     DeclarativeBase,
     Mapped,
     mapped_column,
     relationship,
-    backref
 )
 
 
 class Base(DeclarativeBase):
     pass
 
-
+@dataclass
 class Card(Base):
     __tablename__ = "cards"
 
@@ -27,11 +26,11 @@ class Card(Base):
     back: Mapped[str] = mapped_column(String(1000))
     deck_id: Mapped[int] = mapped_column(sqlalchemy.ForeignKey("decks.deck_id"))
 
-    deck: Mapped["Deck"] = relationship(back_populates="cards") #, backref=backref("cards", cascade="all,delete")
+    deck: Mapped["Deck"] = relationship(back_populates="cards")
 
     def __repr__(self):
         return f"Card(front={self.front}, back={self.back})"
-
+    
 
 class Deck(Base):
     __tablename__ = "decks"
@@ -42,7 +41,14 @@ class Deck(Base):
     
     def __repr__(self):
         return f"Deck(name={self.name}, cards={self.cards})"
-
+    
+    def __json__(self):
+        return {
+            "deck_id": self.deck_id,
+            "name": self.name,
+            "cards": self.cards
+        }
+    
 
 class DatabaseConnector:
     def __init__(self, db_file):
@@ -97,30 +103,15 @@ class DatabaseConnector:
             self.session.query(Deck).filter(Deck.name == deck_name).first().deck_id
         )
         cards = self.session.query(Card).filter(Card.deck_id == deck_id).all()
+        cards = [
+            {
+                k: v for k, v in cards.__dict__.items() 
+                if k != "_sa_instance_state"
+            } for cards in cards
+        ]
         return cards
 
     def get_decks(self):
         decks = self.session.query(Deck).all()
         decks = [deck.name for deck in decks]
         return decks
-
-
-def truncate_all_tables(engine):
-    Base.metadata.reflect(engine)
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-
-
-if __name__ == "__main__":
-    db_file = "sqlite:///anki.db"
-    engine = sqlalchemy.create_engine(db_file)
-    # Base.metadata.create_all(bind=engine)
-
-    db_connector = DatabaseConnector(db_file)
-    deck = db_connector.create_deck("deck1")
-    card = db_connector.create_card(deck_name="deck1", front="front", back="back")
-    new_card = db_connector.create_card(deck_name="deck1", front="front2", back="back2")
-
-    import pdb
-
-    pdb.set_trace()

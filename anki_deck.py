@@ -108,6 +108,7 @@ def answer_eval(card_front: str, card_back: str, answer: str):
 
     output = chat.predict(_input.text)
     result = parser.parse(output)
+    result = result.dict()
     return result
 
 
