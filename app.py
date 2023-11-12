@@ -62,7 +62,6 @@ async def main():
     def card_ui():
         with ui.card().on("click", flip_card):
             card = app.storage.user["card"]
-            # TODO: for some reason always displaying the back after clicking once
             if app.storage.user["side"] == Side.FRONT:
                 ui.markdown("FRONT").style("margin-right: 0; text-align: right; font-weight: bold;")
                 ui.label(card["front"])
@@ -72,7 +71,7 @@ async def main():
 
 
     def flip_card():
-        app.storage.user["side"] = not app.storage.user["side"]
+        app.storage.user["side"] = Side.BACK if app.storage.user["side"] == Side.FRONT else Side.FRONT
         card_ui.refresh()
         
     def random_card():
