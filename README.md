@@ -31,7 +31,7 @@ PePe can:
 ## What we learned
 - Using LangChain
 - Using Claude API
-- How to make a user interface with NiceGUI (and that it's not actually that nice)
+- How to make a user interface with NiceGUI
 
 ## What's next for PePe (PensumPerdiscere)
 - Being able to ramp up the difficulty levels of quizzes
