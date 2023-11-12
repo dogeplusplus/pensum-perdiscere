@@ -99,8 +99,6 @@ async def main():
         card_back = ui.textarea("Card Back", placeholder="Back of the card")
         ui.upload(on_upload=lambda e: handle_upload(e, card_front.value, card_back.value), label="Reference Material")
 
-
-
     @ui.page("/create_deck")
     def deck():
         ui.markdown("### Create Deck")
@@ -129,7 +127,6 @@ async def main():
         fact_check_page.refresh()
         review.refresh()
         
-
     async def handle_upload(e: events.UploadEventArguments, card_front: str, card_back: str):
         with e.content as f, TemporaryDirectory() as temp_dir:
 
@@ -261,5 +258,8 @@ async def main():
     spinner = ui.spinner(size="xl")
     spinner.set_visibility(False)
 
-storage_secret = "potato"
-ui.run(title="PensumPerdiscere", storage_secret=storage_secret)
+ui.run(
+    title="PensumPerdiscere", 
+    favicon="ankiclaude.png",
+    storage_secret="secret",
+)

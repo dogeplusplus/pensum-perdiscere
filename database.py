@@ -1,9 +1,8 @@
 import os
 import sqlalchemy
 
-from dataclasses import dataclass
-
 from typing import List
+from dataclasses import dataclass
 from sqlalchemy import String
 from sqlalchemy.orm import (
     sessionmaker,
@@ -16,6 +15,7 @@ from sqlalchemy.orm import (
 
 class Base(DeclarativeBase):
     pass
+
 
 @dataclass
 class Card(Base):

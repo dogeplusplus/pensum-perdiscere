@@ -135,6 +135,7 @@ def test_fact_check():
     )
     print(fact_check(card_front, card_back, evidence))
 
+
 def test_answer_eval():
     card_front = "What is a partial differential equation?"
     card_back = '''A partial differential equation is a type of mathematical equation that involves the partial derivatives\
@@ -144,12 +145,9 @@ def test_answer_eval():
     answer = "Its some sort of math thing, people use it for physical modelling and statistics. It is a type of inequality"
     print(answer_eval(card_front, card_back, answer))
 
-def main():
-    # test_create_deck()
-    test_fact_check()
-    # test_answer_eval()
 
-    
+def main():
+    test_fact_check()
 
 
 if __name__ == "__main__":
